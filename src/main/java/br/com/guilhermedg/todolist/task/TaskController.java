@@ -59,6 +59,12 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
         }
 
+        var idUser = request.getAttribute("idUser");
+        if (!task.getIdUser().equals(idUser)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have permission to update this task");
+        }
+
+        // Copy the non-null properties from taskModel to task
         Utils.copyNonNullProperties(taskModel, task);
 
         // Validate the start/end date
@@ -72,7 +78,7 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("The start date must be before the end date");
         }
 
-        var savedTask = this.taskRepository.save(task);
-        return ResponseEntity.status(HttpStatus.OK).body(savedTask);
+        var updatedTask = this.taskRepository.save(task);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedTask);
     }
 }
