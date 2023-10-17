@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.guilhermedg.todolist.utils.Utils;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -52,21 +53,26 @@ public class TaskController {
     @PutMapping("/{id}")
     public ResponseEntity update(@PathVariable UUID id, @RequestBody TaskModel taskModel,
             HttpServletRequest request) {
-        var idUser = request.getAttribute("idUser");
-        taskModel.setIdUser((UUID) idUser);
-        taskModel.setId(id);
+
+        var task = this.taskRepository.findById(id).orElse(null);
+        if (task == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+        }
+
+        Utils.copyNonNullProperties(taskModel, task);
 
         // Validate the start/end date
         var currentDate = LocalDateTime.now();
-        if (currentDate.isAfter(taskModel.getStartAt()) || currentDate.isAfter(taskModel.getEndAt())) {
+        if (currentDate.isAfter(task.getStartAt()) ||
+                currentDate.isAfter(task.getEndAt())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("The start/end date must be after the current date");
         }
-        if (taskModel.getStartAt().isAfter(taskModel.getEndAt())) {
+        if (task.getStartAt().isAfter(task.getEndAt())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("The start date must be before the end date");
         }
 
-        var task = this.taskRepository.save(taskModel);
-        return ResponseEntity.status(HttpStatus.OK).body(task);
+        var savedTask = this.taskRepository.save(task);
+        return ResponseEntity.status(HttpStatus.OK).body(savedTask);
     }
 }
